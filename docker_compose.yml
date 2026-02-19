@@ -1,11 +1,51 @@
-version: "3.9"
+version: '3.8'
+
 services:
-  api:
-    build: .
-    env_file: .env
+  postgres:
+    image: postgres:15-alpine
+    container_name: chefgenie_db
+    environment:
+      POSTGRES_DB: chefgenie
+      POSTGRES_USER: chefgenie
+      POSTGRES_PASSWORD: chefgenie_password
+    ports:
+      - "5432:5432"
     volumes:
-      - ./chroma_store:/app/chroma_store
-      - ./app.db:/app/app.db
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chefgenie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: chefgenie_api
+    environment:
+      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://chefgenie:chefgenie_password@postgres:5432/chefgenie
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LLM_PROVIDER: openai
+      VECTOR_DB_DIR: /app/chroma_store
     ports:
       - "8000:8000"
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./chroma_store:/app/chroma_store
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chefgenie_web
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

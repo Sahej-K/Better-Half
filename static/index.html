@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChefGenie — AI Recipe Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .tab-active { background: #fff7ed; color: #c2410c; border-color: #fb923c; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased min-h-screen">
+
+<!-- NAV -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <div class="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
+    <span class="text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">ChefGenie</span>
+    <div class="flex gap-1" id="tabs">
+      <button onclick="showTab('pantry')"  id="tab-pantry"  class="tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">🧊 Pantry</button>
+      <button onclick="showTab('suggest')" id="tab-suggest" class="tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">🍳 Get Recipes</button>
+      <button onclick="showTab('prefs')"   id="tab-prefs"   class="tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">⚙️ Preferences</button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-4xl mx-auto px-4 py-8">
+
+<!-- ═══════════════════ PANTRY TAB ═══════════════════ -->
+<section id="page-pantry" class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold">🧊 My Pantry</h1>
+    <p class="text-gray-500 mt-1">Add ingredients you have at home. ChefGenie will suggest recipes using them.</p>
+  </div>
+
+  <!-- Add form -->
+  <form onsubmit="addItem(event)" class="flex gap-3">
+    <input id="inp-name" placeholder="Ingredient (e.g. eggs)" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none" required>
+    <input id="inp-qty" placeholder="Qty (opt.)" class="w-28 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-300 outline-none">
+    <button type="submit" class="px-5 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors">+ Add</button>
+  </form>
+
+  <!-- Image upload -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">📸 Add from Image</h2>
+    <div class="flex gap-3">
+      <input id="inp-img" placeholder="Paste an image URL of your fridge or groceries" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-300 outline-none">
+      <button onclick="analyzeImage()" id="btn-analyze" class="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 disabled:opacity-50">Analyze</button>
+    </div>
+    <div id="img-result" class="hidden mt-3 p-3 bg-green-50 rounded-lg text-sm text-green-700 font-medium"></div>
+  </div>
+
+  <div class="flex justify-between items-center">
+    <p id="pantry-count" class="text-sm text-gray-500"></p>
+    <button onclick="clearPantry()" class="text-xs text-red-500 hover:text-red-700">Clear all</button>
+  </div>
+  <div id="pantry-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+  <div id="pantry-empty" class="hidden text-center py-12 text-gray-400">
+    <p class="text-4xl mb-2">🧺</p>
+    <p>Your pantry is empty. Add some ingredients above!</p>
+  </div>
+</section>
+
+<!-- ═══════════════════ SUGGEST TAB ═══════════════════ -->
+<section id="page-suggest" class="space-y-6 hidden">
+  <div>
+    <h1 class="text-2xl font-bold">🍳 Get Recipes</h1>
+    <p class="text-gray-500 mt-1">ChefGenie will suggest recipes based on your pantry and preferences.</p>
+  </div>
+
+  <div class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">Cuisine</label>
+      <select id="sel-cuisine" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-300 outline-none">
+        <option value="">Any</option>
+        <option>italian</option><option>indian</option><option>asian</option>
+        <option>mexican</option><option>french</option><option>middle eastern</option><option>american</option>
+      </select>
+    </div>
+    <button onclick="suggestRecipes()" id="btn-suggest" class="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-red-600 disabled:opacity-50">✨ Suggest Recipes</button>
+  </div>
+
+  <div id="suggest-loading" class="hidden text-center py-12">
+    <div class="inline-block spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+    <p class="mt-3 text-gray-500">ChefGenie is crafting recipes for you…</p>
+  </div>
+  <div id="suggest-error" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+  <div id="recipe-grid" class="grid gap-6 md:grid-cols-2"></div>
+</section>
+
+<!-- ═══════════════════ PREFS TAB ═══════════════════ -->
+<section id="page-prefs" class="space-y-6 hidden">
+  <div>
+    <h1 class="text-2xl font-bold">⚙️ Preferences</h1>
+    <p class="text-gray-500 mt-1">Tell ChefGenie about your diet so it never suggests something you can't eat.</p>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">Dietary Restrictions</h2>
+    <div id="chips-diets" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">Allergies (will NEVER appear in recipes)</h2>
+    <div id="chips-allergies" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">Preferred Cuisines</h2>
+    <div id="chips-cuisines" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-3">Disliked Foods</h2>
+    <div class="flex gap-2 mb-3">
+      <input id="inp-disliked" placeholder="e.g. cilantro" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-300 outline-none"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addDisliked()}">
+      <button onclick="addDisliked()" class="px-4 py-2 bg-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300">Add</button>
+    </div>
+    <div id="chips-disliked" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <button onclick="savePrefs()" id="btn-save-prefs" class="px-6 py-2.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50">Save Preferences</button>
+</section>
+
+</main>
+
+<script>
+// ── State ───────────────────────────────────────────
+let pantryItems = [];
+let prefs = { diets:[], allergies:[], disliked:[], preferred_cuisines:[] };
+
+const DIET_OPT = ["vegetarian","vegan","pescatarian","keto","paleo","gluten-free","halal","kosher"];
+const ALLERGY_OPT = ["peanuts","tree nuts","dairy","eggs","soy","wheat","shellfish","fish"];
+const CUISINE_OPT = ["italian","indian","asian","mexican","french","middle eastern","american","mediterranean"];
+
+// ── API helpers ─────────────────────────────────────
+const API = "";  // same origin
+async function api(method, path, body) {
+  const opts = { method, headers:{"Content-Type":"application/json"} };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.detail || res.statusText);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// ── Tab switching ───────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('page-' + tab).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active'));
+  document.getElementById('tab-' + tab).classList.add('tab-active');
+}
+
+// ── Pantry ──────────────────────────────────────────
+async function loadPantry() {
+  pantryItems = await api('GET', '/pantry');
+  renderPantry();
+}
+
+function renderPantry() {
+  const grid = document.getElementById('pantry-grid');
+  const empty = document.getElementById('pantry-empty');
+  const count = document.getElementById('pantry-count');
+  if (pantryItems.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    count.textContent = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  count.textContent = pantryItems.length + ' ingredient' + (pantryItems.length!==1?'s':'');
+  grid.innerHTML = pantryItems.map(i => `
+    <div class="bg-white rounded-lg border border-gray-200 p-3 flex items-center justify-between group">
+      <div>
+        <p class="font-medium text-sm text-gray-800 capitalize">${esc(i.name)}</p>
+        ${i.quantity ? `<p class="text-xs text-gray-400">${esc(i.quantity)}</p>` : ''}
+      </div>
+      <button onclick="deleteItem(${i.id})" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addItem(e) {
+  e.preventDefault();
+  const name = document.getElementById('inp-name').value.trim();
+  const qty = document.getElementById('inp-qty').value.trim();
+  if (!name) return;
+  await api('POST', '/pantry', { name, quantity: qty||null });
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-qty').value = '';
+  loadPantry();
+}
+
+async function deleteItem(id) {
+  await api('DELETE', '/pantry/' + id);
+  loadPantry();
+}
+
+async function clearPantry() {
+  if (!confirm('Remove all pantry items?')) return;
+  await api('DELETE', '/pantry');
+  loadPantry();
+}
+
+async function analyzeImage() {
+  const url = document.getElementById('inp-img').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('btn-analyze');
+  btn.disabled = true; btn.textContent = 'Analyzing…';
+  const resDiv = document.getElementById('img-result');
+  resDiv.classList.add('hidden');
+  try {
+    const data = await api('POST', '/vision/pantry', { image_url: url, add_to_pantry: true });
+    resDiv.textContent = '✅ Detected & added: ' + data.detected_items.join(', ');
+    resDiv.classList.remove('hidden');
+    loadPantry();
+  } catch(e) {
+    alert('Image analysis failed: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Analyze';
+}
+
+// ── Recipes ─────────────────────────────────────────
+async function suggestRecipes() {
+  const btn = document.getElementById('btn-suggest');
+  const loading = document.getElementById('suggest-loading');
+  const errDiv = document.getElementById('suggest-error');
+  const grid = document.getElementById('recipe-grid');
+
+  btn.disabled = true; loading.classList.remove('hidden');
+  errDiv.classList.add('hidden'); grid.innerHTML = '';
+
+  const cuisine = document.getElementById('sel-cuisine').value || null;
+  try {
+    const data = await api('POST', '/recipes/suggest', { cuisine, servings:2, allow_missing:true });
+    if (data.recipes.length === 0) {
+      errDiv.textContent = 'No recipes found. Try adding more ingredients!';
+      errDiv.classList.remove('hidden');
+    } else {
+      grid.innerHTML = data.recipes.map(renderRecipeCard).join('');
+    }
+  } catch(e) {
+    errDiv.textContent = e.message || 'Failed. Check backend & OpenAI key.';
+    errDiv.classList.remove('hidden');
+  }
+  btn.disabled = false; loading.classList.add('hidden');
+}
+
+function renderRecipeCard(r) {
+  const pct = Math.round(r.score * 100);
+  const missingNames = (r.missing||[]).map(m => (m.name||m).toLowerCase());
+  const ings = (r.ingredients||[]).map(ing => {
+    const miss = missingNames.includes(ing.toLowerCase());
+    return miss
+      ? `<span class="text-xs px-2 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">${esc(ing)} ✗</span>`
+      : `<span class="text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">${esc(ing)}</span>`;
+  }).join(' ');
+
+  const steps = (r.steps||[]).map((s,i) => `
+    <li class="flex gap-3 text-sm text-gray-600">
+      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">${i+1}</span>
+      <span>${esc(s.replace(/^(Step )?\d+[:.]\s*/i,''))}</span>
+    </li>`).join('');
+
+  return `
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="p-5 border-b border-gray-100">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="text-lg font-semibold">${esc(r.title)}</h3>
+          ${r.cuisine ? `<span class="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">${esc(r.cuisine)}</span>` : ''}
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="text-2xl font-bold text-orange-600">${pct}%</div>
+          <div class="text-xs text-gray-400">match</div>
+        </div>
+      </div>
+      <div class="mt-3 w-full bg-gray-100 rounded-full h-2">
+        <div class="h-2 rounded-full bg-gradient-to-r from-orange-400 to-red-500" style="width:${pct}%"></div>
+      </div>
+    </div>
+    <div class="p-5 border-b border-gray-100">
+      <h4 class="text-sm font-semibold text-gray-700 mb-2">Ingredients</h4>
+      <div class="flex flex-wrap gap-1.5">${ings}</div>
+      ${missingNames.length ? '<p class="mt-2 text-xs text-gray-400">🔴 Red = need to buy &nbsp; 🟢 Green = you have it</p>' : ''}
+    </div>
+    <div class="p-5">
+      <h4 class="text-sm font-semibold text-gray-700 mb-2">Steps</h4>
+      <ol class="space-y-2">${steps}</ol>
+    </div>
+  </div>`;
+}
+
+// ── Preferences ─────────────────────────────────────
+async function loadPrefs() {
+  prefs = await api('GET', '/preferences');
+  renderPrefs();
+}
+
+function renderPrefs() {
+  renderChips('chips-diets', DIET_OPT, prefs.diets, 'diets', 'bg-orange-100 text-orange-700 border-orange-300');
+  renderChips('chips-allergies', ALLERGY_OPT, prefs.allergies, 'allergies', 'bg-red-100 text-red-700 border-red-300');
+  renderChips('chips-cuisines', CUISINE_OPT, prefs.preferred_cuisines, 'preferred_cuisines', 'bg-blue-100 text-blue-700 border-blue-300');
+  renderDisliked();
+}
+
+function renderChips(containerId, options, selected, field, activeClass) {
+  document.getElementById(containerId).innerHTML = options.map(opt => {
+    const active = selected.includes(opt);
+    return `<button onclick="togglePref('${field}','${opt}')"
+      class="text-xs px-3 py-1.5 rounded-full border font-medium capitalize transition-colors ${active ? activeClass : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${esc(opt)}</button>`;
+  }).join('');
+}
+
+function togglePref(field, value) {
+  const arr = prefs[field];
+  const idx = arr.indexOf(value);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+  renderPrefs();
+}
+
+function addDisliked() {
+  const inp = document.getElementById('inp-disliked');
+  const val = inp.value.trim().toLowerCase();
+  if (!val || prefs.disliked.includes(val)) return;
+  prefs.disliked.push(val);
+  inp.value = '';
+  renderDisliked();
+}
+
+function removeDisliked(val) {
+  prefs.disliked = prefs.disliked.filter(d => d !== val);
+  renderDisliked();
+}
+
+function renderDisliked() {
+  const container = document.getElementById('chips-disliked');
+  if (prefs.disliked.length === 0) {
+    container.innerHTML = '<p class="text-xs text-gray-400">None added yet</p>';
+    return;
+  }
+  container.innerHTML = prefs.disliked.map(d => `
+    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+      ${esc(d)}
+      <button onclick="removeDisliked('${esc(d)}')" class="text-gray-400 hover:text-red-500">✕</button>
+    </span>`).join('');
+}
+
+async function savePrefs() {
+  const btn = document.getElementById('btn-save-prefs');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    prefs = await api('PUT', '/preferences', prefs);
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => { btn.textContent = 'Save Preferences'; btn.disabled = false; }, 1500);
+  } catch(e) {
+    alert('Failed to save: ' + e.message);
+    btn.textContent = 'Save Preferences'; btn.disabled = false;
+  }
+}
+
+// ── Util ────────────────────────────────────────────
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ── Init ────────────────────────────────────────────
+showTab('pantry');
+loadPantry();
+loadPrefs();
+</script>
+</body>
+</html>
