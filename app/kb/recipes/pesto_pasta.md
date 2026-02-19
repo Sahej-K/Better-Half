@@ -2,7 +2,11 @@
 id: kb_pesto_001
 title: Pesto Pasta
 cuisine: italian
+<<<<<<< HEAD
 tags: [pasta, vegetarian, quick]
+=======
+tags: pasta,vegetarian,quick
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0
 ingredients:
   - pasta
   - basil
@@ -12,6 +16,7 @@ ingredients:
   - pine nuts
   - salt
   - black pepper
+<<<<<<< HEAD
 ---
 
 ## Pesto Pasta
@@ -25,3 +30,8 @@ A classic Italian dish ready in 20 minutes.
 4. Drain pasta, reserving 1/2 cup pasta water.
 5. Toss pasta with pesto sauce. Add pasta water a tablespoon at a time to reach desired consistency.
 6. Serve with extra parmesan on top.
+=======
+content: |
+  Boil pasta. Blend basil, olive oil, garlic, parmesan, pine nuts into pesto. Toss with pasta.
+---
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0

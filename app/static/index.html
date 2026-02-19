@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChefGenie</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242734;
+    --accent: #f59e0b;
+    --accent2: #fb923c;
+    --text: #e4e4e7;
+    --muted: #71717a;
+    --border: #2e3040;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  /* NAV */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-right: 2rem;
+  }
+  .nav-tabs { display: flex; gap: 0.25rem; }
+  .nav-tab {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--muted);
+    border: none;
+    background: none;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active {
+    color: var(--accent);
+    background: rgba(245,158,11,0.1);
+  }
+
+  /* LAYOUT */
+  main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  h2 {
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  /* FORMS */
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  input[type="text"], input[type="number"], select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border 0.2s;
+    flex: 1;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  ::placeholder { color: var(--muted); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+  }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--muted); }
+  .btn-danger {
+    background: rgba(239,68,68,0.15);
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+
+  /* TAGS / CHIPS */
+  .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .chip .remove {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .chip .remove:hover { color: var(--danger); }
+
+  /* PANTRY GRID */
+  .pantry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .pantry-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    transition: border 0.2s;
+  }
+  .pantry-item:hover { border-color: var(--muted); }
+  .pantry-item .name { font-weight: 600; text-transform: capitalize; }
+  .pantry-item .qty { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+  .pantry-item .del-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.2rem;
+  }
+  .pantry-item .del-btn:hover { color: var(--danger); }
+
+  /* RECIPE CARDS */
+  .recipe-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    transition: border 0.2s;
+  }
+  .recipe-card:hover { border-color: var(--accent); }
+  .recipe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .recipe-title { font-size: 1.25rem; font-weight: 700; }
+  .recipe-cuisine {
+    background: rgba(245,158,11,0.15);
+    color: var(--accent);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .recipe-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--success);
+    font-weight: 600;
+  }
+  .recipe-section { margin-top: 1rem; }
+  .recipe-section h4 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .recipe-section ul { padding-left: 1.25rem; }
+  .recipe-section li { margin-bottom: 0.3rem; font-size: 0.95rem; }
+  .recipe-section ol li { margin-bottom: 0.5rem; }
+  .missing-tag {
+    background: rgba(239,68,68,0.15);
+    color: var(--danger);
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-left: 0.25rem;
+  }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty .icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .empty p { font-size: 0.95rem; }
+
+  /* LOADING */
+  .spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+  }
+  .spinner.show { display: block; }
+  .spinner::after {
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error { border-left: 3px solid var(--danger); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    nav { padding: 0 1rem; }
+    .logo { font-size: 1.2rem; margin-right: 1rem; }
+    .nav-tab { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+    main { padding: 1.25rem 1rem; }
+    .pantry-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">&#127859; ChefGenie</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="pantry">Pantry</button>
+    <button class="nav-tab" data-page="prefs">Preferences</button>
+    <button class="nav-tab" data-page="suggest">Get Recipes</button>
+  </div>
+</nav>
+
+<main>
+  <!-- PANTRY PAGE -->
+  <div id="pantry" class="page active">
+    <h2>Your Pantry</h2>
+    <p class="subtitle">Add ingredients you have on hand</p>
+
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="item-name" placeholder="Ingredient name (e.g. eggs)">
+        <input type="text" id="item-qty" placeholder="Quantity (e.g. 12)" style="max-width:160px;">
+        <button class="btn btn-primary" onclick="addPantryItem()">+ Add</button>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+      <span id="pantry-count" style="color:var(--muted); font-size:0.9rem;"></span>
+      <button class="btn btn-danger btn-sm" onclick="clearPantry()">Clear All</button>
+    </div>
+
+    <div id="pantry-list" class="pantry-grid"></div>
+    <div id="pantry-empty" class="empty" style="display:none;">
+      <div class="icon">&#129367;</div>
+      <p>Your pantry is empty.<br>Add some ingredients to get started!</p>
+    </div>
+  </div>
+
+  <!-- PREFERENCES PAGE -->
+  <div id="prefs" class="page">
+    <h2>Dietary Preferences</h2>
+    <p class="subtitle">Tell ChefGenie about your diet so it can tailor recipes for you</p>
+
+    <div class="card">
+      <h3>Diets</h3>
+      <div class="input-row">
+        <input type="text" id="diet-input" placeholder="e.g. vegetarian, keto, vegan">
+        <button class="btn btn-secondary btn-sm" onclick="addChip('diets','diet-input')">Add</button>
+      </div>
+      <div class="chip-list" id="diets-chips"></div>
+    </div>
+
+    <div class="card">
+      <h3>Allergies</h3>
+      <div class="input-row">
+        <input type="text" id="allergy-input" placeholder="e.g. peanuts, shellfish, gluten">
+        <button class="btn btn-secondary btn-sm" onclick="addChip('allergies','allergy-input')">Add</button>
+      </div>
+      <div class="chip-list" id="allergies-chips"></div>
+    </div>
+
+    <div class="card">
+      <h3>Disliked Ingredients</h3>
+      <div class="input-row">
+        <input type="text" id="disliked-input" placeholder="e.g. olives, cilantro">
+        <button class="btn btn-secondary btn-sm" onclick="addChip('disliked','disliked-input')">Add</button>
+      </div>
+      <div class="chip-list" id="disliked-chips"></div>
+    </div>
+
+    <div class="card">
+      <h3>Preferred Cuisines</h3>
+      <div class="input-row">
+        <input type="text" id="cuisine-input" placeholder="e.g. italian, mexican, indian">
+        <button class="btn btn-secondary btn-sm" onclick="addChip('preferred_cuisines','cuisine-input')">Add</button>
+      </div>
+      <div class="chip-list" id="preferred_cuisines-chips"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="savePrefs()" style="margin-top:0.5rem;">Save Preferences</button>
+  </div>
+
+  <!-- SUGGEST PAGE -->
+  <div id="suggest" class="page">
+    <h2>Recipe Suggestions</h2>
+    <p class="subtitle">ChefGenie will find recipes based on your pantry and preferences</p>
+
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="cuisine-filter" placeholder="Filter by cuisine (optional)">
+        <input type="number" id="servings" value="2" min="1" max="12" style="max-width:100px;" title="Servings">
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.9rem;white-space:nowrap;color:var(--muted);">
+          <input type="checkbox" id="allow-missing" checked> Allow missing
+        </label>
+        <button class="btn btn-primary" onclick="suggestRecipes()" id="suggest-btn">&#9733; Suggest Recipes</button>
+      </div>
+    </div>
+
+    <div class="spinner" id="suggest-spinner"></div>
+
+    <div id="recipes-list"></div>
+    <div id="recipes-empty" class="empty" style="display:none;">
+      <div class="icon">&#127859;</div>
+      <p>Hit "Suggest Recipes" to get personalized recommendations<br>based on what's in your pantry.</p>
+    </div>
+  </div>
+</main>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const API = '';
+
+// --- NAV ---
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.page).classList.add('active');
+  });
+});
+
+// --- TOAST ---
+function toast(msg, type='success') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// --- PANTRY ---
+async function loadPantry() {
+  try {
+    const res = await fetch(`${API}/pantry`);
+    const items = await res.json();
+    const list = document.getElementById('pantry-list');
+    const empty = document.getElementById('pantry-empty');
+    const count = document.getElementById('pantry-count');
+
+    if (!items.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      count.textContent = '';
+      return;
+    }
+    empty.style.display = 'none';
+    count.textContent = `${items.length} item${items.length > 1 ? 's' : ''}`;
+    list.innerHTML = items.map(i => `
+      <div class="pantry-item">
+        <div>
+          <div class="name">${esc(i.name)}</div>
+          ${i.quantity ? `<div class="qty">${esc(i.quantity)}</div>` : ''}
+        </div>
+        <button class="del-btn" onclick="delPantryItem(${i.id})" title="Remove">&times;</button>
+      </div>
+    `).join('');
+  } catch(e) { toast('Failed to load pantry', 'error'); }
+}
+
+async function addPantryItem() {
+  const name = document.getElementById('item-name').value.trim();
+  const qty = document.getElementById('item-qty').value.trim();
+  if (!name) return;
+  try {
+    await fetch(`${API}/pantry`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, quantity: qty || null})
+    });
+    document.getElementById('item-name').value = '';
+    document.getElementById('item-qty').value = '';
+    document.getElementById('item-name').focus();
+    loadPantry();
+    toast(`Added ${name}`);
+  } catch(e) { toast('Failed to add item', 'error'); }
+}
+
+async function delPantryItem(id) {
+  try {
+    await fetch(`${API}/pantry/${id}`, {method:'DELETE'});
+    loadPantry();
+  } catch(e) { toast('Failed to remove', 'error'); }
+}
+
+async function clearPantry() {
+  if (!confirm('Remove all pantry items?')) return;
+  try {
+    await fetch(`${API}/pantry`, {method:'DELETE'});
+    loadPantry();
+    toast('Pantry cleared');
+  } catch(e) { toast('Failed to clear', 'error'); }
+}
+
+// Enter key support
+document.getElementById('item-name').addEventListener('keydown', e => { if (e.key==='Enter') addPantryItem(); });
+document.getElementById('item-qty').addEventListener('keydown', e => { if (e.key==='Enter') addPantryItem(); });
+
+// --- PREFERENCES ---
+let prefs = { diets:[], allergies:[], disliked:[], preferred_cuisines:[] };
+
+async function loadPrefs() {
+  try {
+    const res = await fetch(`${API}/preferences`);
+    prefs = await res.json();
+    renderChips();
+  } catch(e) { toast('Failed to load preferences', 'error'); }
+}
+
+function renderChips() {
+  for (const key of ['diets','allergies','disliked','preferred_cuisines']) {
+    const el = document.getElementById(`${key}-chips`);
+    el.innerHTML = (prefs[key] || []).map(v => `
+      <span class="chip">${esc(v)}<span class="remove" onclick="removeChip('${key}','${esc(v)}')">&times;</span></span>
+    `).join('');
+  }
+}
+
+function addChip(key, inputId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim().toLowerCase();
+  if (!val) return;
+  if (!prefs[key].includes(val)) prefs[key].push(val);
+  inp.value = '';
+  renderChips();
+}
+
+function removeChip(key, val) {
+  prefs[key] = prefs[key].filter(v => v !== val);
+  renderChips();
+}
+
+async function savePrefs() {
+  try {
+    const res = await fetch(`${API}/preferences`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(prefs)
+    });
+    prefs = await res.json();
+    renderChips();
+    toast('Preferences saved!');
+  } catch(e) { toast('Failed to save preferences', 'error'); }
+}
+
+// Enter key for pref inputs
+for (const id of ['diet-input','allergy-input','disliked-input','cuisine-input']) {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key==='Enter') e.target.nextElementSibling.click();
+  });
+}
+
+// --- SUGGEST RECIPES ---
+async function suggestRecipes() {
+  const btn = document.getElementById('suggest-btn');
+  const spinner = document.getElementById('suggest-spinner');
+  const list = document.getElementById('recipes-list');
+  const empty = document.getElementById('recipes-empty');
+
+  btn.disabled = true;
+  btn.textContent = 'Thinking...';
+  spinner.classList.add('show');
+  list.innerHTML = '';
+  empty.style.display = 'none';
+
+  try {
+    const body = {
+      cuisine: document.getElementById('cuisine-filter').value.trim() || null,
+      servings: parseInt(document.getElementById('servings').value) || 2,
+      allow_missing: document.getElementById('allow-missing').checked
+    };
+    const res = await fetch(`${API}/recipes/suggest`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data.recipes || !data.recipes.length) {
+      empty.style.display = 'block';
+      empty.querySelector('p').textContent = 'No recipes found. Try adding more ingredients to your pantry!';
+      return;
+    }
+
+    list.innerHTML = data.recipes.map(r => `
+      <div class="recipe-card">
+        <div class="recipe-header">
+          <div>
+            <div class="recipe-title">${esc(r.title)}</div>
+            <span class="recipe-score">&#9733; ${(r.score * 100).toFixed(0)}% match</span>
+          </div>
+          ${r.cuisine ? `<span class="recipe-cuisine">${esc(r.cuisine)}</span>` : ''}
+        </div>
+
+        <div class="recipe-section">
+          <h4>Ingredients</h4>
+          <ul>
+            ${r.ingredients.map(i => `<li>${esc(i)}</li>`).join('')}
+          </ul>
+        </div>
+
+        ${r.missing && r.missing.length ? `
+        <div class="recipe-section">
+          <h4>Missing from Pantry</h4>
+          <ul>
+            ${r.missing.map(m => `<li>${esc(m.name)} ${m.suggested_quantity ? `<span class="missing-tag">${esc(m.suggested_quantity)}</span>` : ''}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+
+        <div class="recipe-section">
+          <h4>Steps</h4>
+          <ol>
+            ${r.steps.map(s => `<li>${esc(s)}</li>`).join('')}
+          </ol>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    toast('Failed to get recipes — is your OpenAI API key set?', 'error');
+    empty.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#9733; Suggest Recipes';
+    spinner.classList.remove('show');
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- INIT ---
+loadPantry();
+loadPrefs();
+</script>
+</body>
+</html>

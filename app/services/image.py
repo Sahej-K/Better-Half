@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 import json
+=======
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0
 from typing import List
 from app.services.llm import chat_vision_prompt
 
 VISION_SYSTEM = (
+<<<<<<< HEAD
     "You are a kitchen inventory assistant. From the image(s), list the "
     "ingredient items you clearly see. Return ONLY a JSON array of distinct "
     "ingredient names in lowercase (no quantities, no brand names). "
@@ -31,5 +35,26 @@ def extract_ingredients_from_image_url(image_url: str) -> List[str]:
         if isinstance(arr, list):
             return [str(x).lower().strip() for x in arr if x]
     except (ValueError, json.JSONDecodeError):
+=======
+    "You are a kitchen inventory assistant. From the image(s), list the ingredient items you clearly see. "
+    "Return a short JSON array of distinct ingredient names in lowercase (no quantities, no brand names)."
+)
+
+def extract_ingredients_from_image_url(image_url: str) -> List[str]:
+    messages = [
+        {"role": "system", "content": [{"type": "text", "text": VISION_SYSTEM}]},
+        {"role": "user", "content": [
+            {"type": "text", "text": "Identify ingredients."},
+            {"type": "image_url", "image_url": {"url": image_url}}
+        ]}
+    ]
+    raw = chat_vision_prompt(messages)
+    import json
+    try:
+        arr = json.loads(raw.strip().split("\n")[-1])
+        if isinstance(arr, list):
+            return [str(x).lower().strip() for x in arr]
+    except Exception:
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0
         pass
     return []

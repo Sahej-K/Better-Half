@@ -1,7 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -25,7 +28,10 @@ class Settings(BaseSettings):
 
     VISION_PROVIDER: str = "openai"
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 095922fdc5ba1e9dd0b202cabbfe004f07a944a0
 @lru_cache()
 def get_settings():
     return Settings()
